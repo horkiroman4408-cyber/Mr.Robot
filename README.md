@@ -1,24 +1,31 @@
 # Mr. Robot
 
-A prototype toolkit for warehouse work — a single HTML file that tries to make
-routine file tasks faster than Excel macros and manual copy-paste.
+A working prototype for warehouse file work — a single HTML file that makes
+routine tasks faster than Excel macros and manual copy-paste.
 
-This is a work in progress, not a finished product. It's shared for two reasons:
-so other people building similar tools can take ideas from it, and so anyone who
-sees a better way can send feedback or code back.
+It's not a finished product, but it's not a mockup either. Everything described
+here runs, and you can try it right now in your browser.
+
+It's shared for two reasons: so other people building similar tools can take
+ideas from it, and so anyone who sees a better way can send feedback or code
+back.
 
 If this helps you — good. If you want to help it grow — also good.
 
-![status](https://img.shields.io/badge/status-prototype-orange)
+![status](https://img.shields.io/badge/status-working%20prototype-success)
 ![version](https://img.shields.io/badge/version-3.6.2-blue)
+![runs in](https://img.shields.io/badge/runs%20in-your%20browser-0a84ff)
 ![offline](https://img.shields.io/badge/offline-ready-success)
 ![single file](https://img.shields.io/badge/single--file-HTML-orange)
 ![vue](https://img.shields.io/badge/vue-3-42b883)
+
+> **Try it now:** [open the live version](https://horkiroman4408-cyber.github.io/Mr.Robot/) — it runs entirely in your browser, no install, no sign-up.
 
 
 ## Contents
 
 - [What it is](#what-it-is)
+- [Try it](#try-it)
 - [Why it exists](#why-it-exists)
 - [Speed](#speed)
 - [Modules](#modules)
@@ -36,6 +43,9 @@ Mr. Robot is a browser app that does warehouse file work — parsing reports,
 comparing two big spreadsheets, filtering locations, calculating KPIs, exporting
 clean results.
 
+It's a working prototype. Not a concept, not a slide deck. You can open it
+right now and use it on real files.
+
 It's one file. No install, no server, no build step. You open `index.html` and
 it works. Everything runs on your machine; nothing is uploaded anywhere. Files
 you load stay in your browser, and they're still there after a page reload.
@@ -43,6 +53,15 @@ you load stay in your browser, and they're still there after a page reload.
 The point isn't that it's the biggest or most polished tool. The point is that
 it's the kind of thing one person can put together in a browser today, and that
 this changes what a "quick internal tool" can look like.
+
+
+## Try it
+
+Live version — runs entirely in your browser, no install, no account needed:
+
+**[Open Mr. Robot](https://horkiroman4408-cyber.github.io/Mr.Robot/)**
+
+You can also download `index.html` and open it locally. It works offline.
 
 
 ## Why it exists
@@ -182,7 +201,6 @@ Notes:
 
 ## How it's built
 
-
 A few decisions that make it fast:
 
 - Everything ships in one file. Vue, Tailwind, SheetJS and the Web Workers
@@ -304,6 +322,6 @@ this repository.
 
 © 2026 Mr. Robot · Made by Raman Horki
 
-Shared as a prototype — with two wishes: that it helps someone, and that
+A working prototype — shared with two wishes: that it helps someone, and that
 someone helps it grow. If you build on it, a small credit back is always
 appreciated — never required.
