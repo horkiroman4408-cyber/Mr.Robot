@@ -1,5 +1,7 @@
 # Mr. Robot
 
+**[ ENG ](./README.md)** | **[ RUS ](./README.ru.md)**
+
 A working prototype for warehouse file work — a single HTML file that makes
 routine tasks faster than Excel macros and manual copy-paste.
 
