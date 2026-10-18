@@ -14,10 +14,12 @@ If this helps you — good. If you want to help it grow — also good.
 
 ![status](https://img.shields.io/badge/status-working%20prototype-success)
 ![version](https://img.shields.io/badge/version-3.6.4-blue)
+![Auto-update](https://img.shields.io/badge/auto--update-enabled-brightgreen?style=flat-square)
 ![runs in](https://img.shields.io/badge/runs%20in-your%20browser-0a84ff)
 ![offline](https://img.shields.io/badge/offline-ready-success)
 ![single file](https://img.shields.io/badge/single--file-HTML-orange)
 ![vue](https://img.shields.io/badge/vue-3-42b883)
+![Privacy](https://img.shields.io/badge/privacy-100%25_local-blue?style=flat-square)
 
 > **Try it now:** [open the live version](https://horkiroman4408-cyber.github.io/Mr.Robot/) — it runs entirely in your browser, no install, no sign-up.
 
