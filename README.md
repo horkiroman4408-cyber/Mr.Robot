@@ -13,7 +13,7 @@ back.
 If this helps you — good. If you want to help it grow — also good.
 
 ![status](https://img.shields.io/badge/status-working%20prototype-success)
-![version](https://img.shields.io/badge/version-3.6.3-blue)
+![version](https://img.shields.io/badge/version-3.6.3.1-blue)
 ![runs in](https://img.shields.io/badge/runs%20in-your%20browser-0a84ff)
 ![offline](https://img.shields.io/badge/offline-ready-success)
 ![single file](https://img.shields.io/badge/single--file-HTML-orange)
