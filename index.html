@@ -1620,8 +1620,10 @@ const SHIFT_CD=['36001300','36001265','36001270','36001216','36001335','36001397
 const SHIFT_AB_STR=JSON.stringify(SHIFT_AB), SHIFT_CD_STR=JSON.stringify(SHIFT_CD);
 
 const CHANGELOG_ALL=[
-{version:'3.6.3',date:'2026-10-18',title:'Aktualizacje online — niezależność od ponownej instalacji pliku',highlight:true,changes:[
-{module:'hub',type:'new',text:'<b>Mr. Robot działa teraz jako aplikacja online</b> — po każdej aktualizacji pliku na serwerze użytkownik <b>otrzymuje najnowszą wersję automatycznie</b>, bez konieczności ręcznej podmiany pliku HTML'},
+{version:'3.6.3.1',date:'2026-10-18',title:'Test aktualizacji online — sprawdzenie badge „Co nowego”',highlight:true,changes:[
+{module:'hub',type:'new',text:'<b>Wpis testowy 3.6.3.1</b> — służy do sprawdzenia, czy po podmianie pliku na GitHubie u użytkowników z wersji <b>3.6.3</b> pojawi się dokładnie <b>1 nieprzeczytana nowość</b> w badge „Co nowego”'},
+{module:'ui',type:'improve',text:'Po tej wersji mechanizm <b>unreadChangelogCount</b> powinien zwrócić <b>1</b> u wszystkich, którzy mieli <code>lastReadDate = „2026-10-18 3.6.3”</code> — potwierdza to, że dystrybucja pliku przez GitHub działa poprawnie'}]},
+{version:'3.6.3',date:'2026-10-18',title:'Aktualizacje online — niezależność od ponownej instalacji pliku',highlight:true,changes:[{module:'hub',type:'new',text:'<b>Mr. Robot działa teraz jako aplikacja online</b> — po każdej aktualizacji pliku na serwerze użytkownik <b>otrzymuje najnowszą wersję automatycznie</b>, bez konieczności ręcznej podmiany pliku HTML'},
 {module:'hub',type:'new',text:'<b>Wersja 3.6.3</b> to pierwsza wersja z nowym mechanizmem dystrybucji — plik źródłowy na GitHubie jest <b>jedynym źródłem prawdy</b>, a użytkownicy zawsze pracują na aktualnej wersji'},
 {module:'hub',type:'improve',text:'Zapamiętane pliki (Grafik, bazy MP/RS, raporty KPI i inne) <b>pozostają w przeglądarce</b> (IndexedDB) — aktualizacja pliku ich nie usuwa i nie wymaga ponownego wczytywania danych'},
 {module:'ui',type:'new',text:'Numer wersji w nagłówku aplikacji i w tym changelogu jest teraz <b>związany z wersją pliku</b> — łatwo sprawdzić, czy użytkownik ma najnowszą wersję'},
@@ -2223,9 +2225,9 @@ const rsView=ref('cards');const mpView=ref('cards');
 function showToast(msg,ms=2500){toast.value=msg;setTimeout(()=>{toast.value='';},ms);}
 watch(view,(v)=>{if(v==='hub'){rsView.value='cards';mpView.value='cards';}});
 const changelogAll=CHANGELOG_ALL;const moduleLabels=MODULE_LABELS;
-const clKey=c=>c.date+' '+c.version;const lastReadDate=ref((()=>{try{return localStorage.getItem(CHANGELOG_READ_KEY)||'';}catch(e){return '';}})());
+const clKey=c=>c.date+' '+c.version;const lastReadDate=ref((()=>{try{const v=localStorage.getItem(CHANGELOG_READ_KEY);if(v)return v;return CHANGELOG_ALL.length?clKey(CHANGELOG_ALL[0]):'';}catch(e){return '';}})());
 const hasUnreadChangelog=computed(()=>{if(!changelogAll.length)return false;return clKey(changelogAll[0])>lastReadDate.value;});
-const unreadChangelogCount=computed(()=>{if(!lastReadDate.value)return changelogAll.length;return changelogAll.filter(c=>clKey(c)>lastReadDate.value).length;});
+const unreadChangelogCount=computed(()=>{if(!lastReadDate.value)return 0;return changelogAll.filter(c=>clKey(c)>lastReadDate.value).length;});
 function markChangelogRead(){if(!changelogAll.length)return;const latest=clKey(changelogAll[0]);try{localStorage.setItem(CHANGELOG_READ_KEY,latest);}catch(e){}lastReadDate.value=latest;}
 watch(view,(v)=>{if(v==='changelog')markChangelogRead();});
 const DEFAULT_NORM_AUDYT=360,DEFAULT_NORM_SCALANIE=130,DEFAULT_NORM_ROZK=90,DEFAULT_NORM_NV=600;
