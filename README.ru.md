@@ -9,7 +9,7 @@
 Если это помогает вам — хорошо. Если вы хотите помочь проекту расти — тоже хорошо.
 
 ![status](https://img.shields.io/badge/status-working%20prototype-success)
-![version](https://img.shields.io/badge/version-3.6.4-blue)
+![version](https://img.shields.io/badge/version-3.6.6-blue)
 ![Auto-update](https://img.shields.io/badge/auto--update-enabled-brightgreen?style=flat-square)
 ![runs in](https://img.shields.io/badge/runs%20in-your%20browser-0a84ff)
 ![offline](https://img.shields.io/badge/offline-ready-success)
