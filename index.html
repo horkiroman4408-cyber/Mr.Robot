@@ -2218,7 +2218,7 @@ html[lang="ru"] .segment-btn,html[lang="uk"] .segment-btn{padding-inline:.8rem}
 <main class="flex-1 px-6 pb-10 max-w-4xl w-full mx-auto space-y-4">
 <div class="changelog-era current"><span>{{ tr(683) }}</span></div>
 <div v-for="(entry, idx) in changelogAll" :key="entry.version" :lang="uiLanguage" class="changelog-entry float-up" :style="{animationDelay:(idx*.06)+'s'}">
-<div class="changelog-entry-header"><span class="changelog-version">v{{ entry.version }}</span><span v-if="entry.highlight" class="changelog-fresh">{{ tr(685) }}</span><span class="changelog-date">{{ entry.date }}</span><span class="changelog-count">{{ entry.changes.length }} {{ tr(686) }}</span></div>
+<div class="changelog-entry-header"><span class="changelog-version">v{{ entry.version }}</span><span v-if="isChangelogEntryNew(entry)" class="changelog-fresh">{{ tr(685) }}</span><span class="changelog-date">{{ entry.date }}</span><span class="changelog-count">{{ entry.changes.length }} {{ tr(686) }}</span></div>
 <h2 class="changelog-title">{{ tr(entry.title) }}</h2>
 <div class="changelog-changes"><div v-for="(change,i) in entry.changes" :key="i" class="changelog-change" :style="{background:moduleLabels[change.module].bg}"><span class="module-chip" :style="{background:moduleLabels[change.module].color}">{{ tr(moduleLabels[change.module].label) }}</span><span class="type-tag" :style="{color:change.type==='new'?'var(--mr-c18,#059669)':(change.type==='fix'?'var(--mr-c27,#dc2626)':'var(--mr-c69,#0284c7)')}">{{ tr(change.type==='new'?'NEW':(change.type==='fix'?'FIX':'UPD')) }}</span><span class="text" v-html="tr(change.text)"></span></div></div>
 </div>
@@ -2508,10 +2508,118 @@ const rsView=ref('cards');const mpView=ref('cards');
 function showToast(msg,ms=2500){toast.value=msg;setTimeout(()=>{toast.value='';},ms);}
 watch(view,(v)=>{if(v==='hub'){rsView.value='cards';mpView.value='cards';}});
 const changelogAll=CHANGELOG_ALL;const moduleLabels=MODULE_LABELS;
-const clKey=c=>c.date+' '+c.version;const lastReadDate=ref((()=>{try{const v=localStorage.getItem(CHANGELOG_READ_KEY);if(v)return v;return CHANGELOG_ALL.length?clKey(CHANGELOG_ALL[0]):'';}catch(e){return '';}})());
-const hasUnreadChangelog=computed(()=>{if(!changelogAll.length)return false;if(!lastReadDate.value){const now=new Date();const today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');return clKey(changelogAll[0])>=today+' 3.6.3.1';}return clKey(changelogAll[0])>lastReadDate.value;});
-const unreadChangelogCount=computed(()=>{if(!lastReadDate.value)return 1;return changelogAll.filter(c=>clKey(c)>lastReadDate.value).length;});
-function markChangelogRead(){if(!changelogAll.length)return;const latest=clKey(changelogAll[0]);try{localStorage.setItem(CHANGELOG_READ_KEY,latest);}catch(e){}lastReadDate.value=latest;}watch(view,(v)=>{if(v==='changelog')markChangelogRead();});
+// Release notifications are per browser and per version, not per download/date.
+const CHANGELOG_READ_KEY='mrrobot_changelog_lastRead';
+const changelogLastRead=ref('');
+const changelogReadReady=ref(false);
+const newlyViewedChangelog=ref([]);
+const clKey=entry=>entry.date+' '+entry.version;
+function clVersion(value){
+ const match=String(value||'').trim().match(/^(?:\d{4}-\d{2}-\d{2}\s+)?v?(\d+(?:\.\d+){1,5})$/);
+ if(!match)return null;
+ const parts=match[1].split('.').map(Number);
+ while(parts.length>2&&parts[parts.length-1]===0)parts.pop();
+ return parts;
+}
+function clCompare(a,b){
+ const aa=clVersion(a),bb=clVersion(b);
+ if(!aa||!bb)return aa?1:bb?-1:0;
+ for(let i=0;i<Math.max(aa.length,bb.length);i++){
+  const diff=(aa[i]||0)-(bb[i]||0);if(diff)return Math.sign(diff);
+ }
+ return 0;
+}
+const latestChangelog=changelogAll.reduce((a,b)=>!a||clCompare(b.version,a.version)>0?b:a,null);
+let changelogDb=null,changelogDbRead=false,changelogViewed=false,storedChangelogRead='';
+function clStored(storage){
+ try{const value=storage().getItem(CHANGELOG_READ_KEY);return clVersion(value)?value:'';}catch(e){return '';}
+}
+for(const storage of [()=>window.localStorage,()=>window.sessionStorage]){
+ const value=clStored(storage);
+ if(value&&(!storedChangelogRead||clCompare(value,storedChangelogRead)>0))storedChangelogRead=value;
+}
+function saveChangelogRead(){
+ let value=changelogLastRead.value;if(!clVersion(value))return;
+ for(const storage of [()=>window.localStorage,()=>window.sessionStorage]){
+  const saved=clStored(storage);if(saved&&clCompare(saved,value)>0)value=saved;
+ }
+ if(clCompare(value,changelogLastRead.value)>0){changelogLastRead.value=value;storedChangelogRead=value;}
+ for(const storage of [()=>window.localStorage,()=>window.sessionStorage]){
+  try{storage().setItem(CHANGELOG_READ_KEY,value);}catch(e){}
+ }
+ if(changelogDb&&changelogDbRead){
+  try{
+   const store=changelogDb.transaction('settings','readwrite').objectStore('settings');
+   const read=store.get('changelog-last-read');
+   read.onsuccess=()=>{
+    const newest=clCompare(read.result,value)>0?read.result:value;
+    store.put(newest,'changelog-last-read');
+    if(clCompare(newest,changelogLastRead.value)>0){
+     changelogLastRead.value=newest;storedChangelogRead=newest;
+     for(const storage of [()=>window.localStorage,()=>window.sessionStorage]){
+      try{storage().setItem(CHANGELOG_READ_KEY,newest);}catch(e){}
+     }
+    }
+   };
+  }catch(e){}
+ }
+}
+function finishChangelogRead(value,persist=true){
+ if(clVersion(value)&&(!storedChangelogRead||clCompare(value,storedChangelogRead)>0))storedChangelogRead=value;
+ if(!changelogViewed){
+  // A genuinely first visit starts quietly; old releases are not notifications.
+  changelogLastRead.value=storedChangelogRead||(latestChangelog?clKey(latestChangelog):'');
+ }else if(clCompare(storedChangelogRead,changelogLastRead.value)>0)changelogLastRead.value=storedChangelogRead;
+ changelogReadReady.value=true;
+ if(persist)saveChangelogRead();
+}
+// Prevent blocked storage from leaving the notification in a loading state.
+const changelogLoadTimer=setTimeout(()=>finishChangelogRead('',false),1200);
+try{
+ const request=indexedDB.open('mrrobot-preferences',1);
+ request.onupgradeneeded=()=>{
+  if(!request.result.objectStoreNames.contains('settings'))request.result.createObjectStore('settings');
+ };
+ request.onsuccess=()=>{
+  changelogDb=request.result;
+  changelogDb.onversionchange=()=>{changelogDb.close();changelogDb=null;};
+  try{
+   const read=changelogDb.transaction('settings').objectStore('settings').get('changelog-last-read');
+   read.onsuccess=()=>{clearTimeout(changelogLoadTimer);changelogDbRead=true;finishChangelogRead(read.result);};
+   read.onerror=()=>{clearTimeout(changelogLoadTimer);changelogDbRead=true;finishChangelogRead('');};
+  }catch(e){clearTimeout(changelogLoadTimer);finishChangelogRead('');}
+ };
+ request.onerror=request.onblocked=()=>{clearTimeout(changelogLoadTimer);finishChangelogRead('');};
+}catch(e){clearTimeout(changelogLoadTimer);finishChangelogRead('');}
+function isUnreadChangelog(entry){
+ return changelogReadReady.value&&!!clVersion(changelogLastRead.value)&&clCompare(entry.version,changelogLastRead.value)>0;
+}
+const unreadChangelogCount=computed(()=>changelogAll.filter(isUnreadChangelog).length);
+const hasUnreadChangelog=computed(()=>unreadChangelogCount.value>0);
+function isChangelogEntryNew(entry){
+ const version=clVersion(entry.version);
+ return !!version&&newlyViewedChangelog.value.includes(version.join('.'));
+}
+function markChangelogRead(){
+ newlyViewedChangelog.value=changelogAll.filter(isUnreadChangelog).map(entry=>clVersion(entry.version).join('.'));
+ if(!latestChangelog)return;
+ changelogViewed=true;
+ if(clCompare(latestChangelog.version,changelogLastRead.value)>=0)changelogLastRead.value=clKey(latestChangelog);
+ storedChangelogRead=changelogLastRead.value;
+ changelogReadReady.value=true;
+ saveChangelogRead();
+}
+watch(view,(value)=>{
+ if(value==='changelog')markChangelogRead();
+ else newlyViewedChangelog.value=[];
+});
+window.addEventListener('storage',event=>{
+ if(event.key!==CHANGELOG_READ_KEY||!clVersion(event.newValue))return;
+ if(clCompare(event.newValue,changelogLastRead.value)>0){
+  changelogLastRead.value=event.newValue;storedChangelogRead=event.newValue;changelogReadReady.value=true;
+ }
+});
+
 const DEFAULT_NORM_AUDYT=360,DEFAULT_NORM_SCALANIE=130,DEFAULT_NORM_ROZK=90,DEFAULT_NORM_NV=600;
 const SHIFT_DEFS=[{key:'AB',label:'A/B'},{key:'CD',label:'C/D'}];const allShiftKeys=SHIFT_DEFS.map(s=>s.key);
 const GROUP_DEFS=[{key:'mohito',label:'MOHITO',shortLabel:'MOHITO',badgeClass:'mohito'},{key:'sinsay',label:'SINSAY',shortLabel:'SINSAY',badgeClass:'sinsay'},{key:'spm',label:'SPM',shortLabel:'SPM',badgeClass:'spm'},{key:'spd',label:'SPD',shortLabel:'SPD',badgeClass:'spd'},{key:'lpp',label:'LPP',shortLabel:'LPP',badgeClass:'lpp'},{key:'inne',label:'Inne',shortLabel:'INNE',badgeClass:'inne'}];
@@ -3390,7 +3498,7 @@ function mrClearAllSaved(){if(!window.confirm(uiLanguage.value==='ru'?'Удал�
 function mrRestoreFiles(){if(!mrHasIndexedDB())return;const handlers={kpiAudit:kpiOnAuditFile,kpiScalanie:kpiOnScalanieFile,kpiRozk:kpiOnRozkFile,kpiNv:kpiOnNvFile,audyt:audytOnFile,mdt:mdtOnFile,stock:stockOnFile,przestoje:przestojeOnFile,toteMp:toteOnMpFile,toteRs:toteOnRsFile};mrFileGetAll().then(all=>{let n=0;for(const slot of Object.keys(all||{})){const v=all[slot],h=handlers[slot];if(!h||!v||!v.blob)continue;try{const file=new File([v.blob],v.name,{type:v.type||'',lastModified:v.lastModified||Date.now()});mrSaved[slot]={name:v.name,savedAt:v.savedAt};const ms=MR_SLOT_STATE[slot];if(ms)ms.savedAt=v.savedAt||'';h({target:{files:[file]},__mrRestore:true});n++;}catch(e){console.warn('Mr. Robot: nie udało się przywrócić',slot,e);}}if(n)setTimeout(()=>showToast(`💾 Przywrócono z przeglądarki: ${n} ${n===1?'plik':(n<5?'pliki':'plików')}`),2500);}).catch(e=>console.warn('Mr. Robot: pamięć plików niedostępna',e));}
 mrRestoreFiles();
 
-return{uiLanguage,uiLanguages,moduleGuides,isDarkTheme,tr,setLanguage,setTheme,openSettings,closeSettings,goFromSettings,view,toast,showToast,showWelcome,closeWelcome,kpiMedal:medal,changelogAll,moduleLabels,hasUnreadChangelog,unreadChangelogCount,
+return{uiLanguage,uiLanguages,moduleGuides,isDarkTheme,tr,setLanguage,setTheme,openSettings,closeSettings,goFromSettings,view,toast,showToast,showWelcome,closeWelcome,kpiMedal:medal,changelogAll,moduleLabels,isChangelogEntryNew,hasUnreadChangelog,unreadChangelogCount,
 rsView,mpView,scalanieState,SCALANIE_SHELF_OPTIONS,SCALANIE_ABC_OPTIONS,scalanieNeedEan,scalanieCanRun,scalanieRun,scalanieExportCSV,scalanieCopyClipboard,scalanieReset,
 scalanieTab,konsolidacja,konsolidacjaRun,konsolidacjaReset,konsolidacjaClearResult,konsolidacjaCopyEan,konsolidacjaToggle,konsolidacjaSelCount,konsolidacjaIsAllSel,konsolidacjaSelAll,konsolidacjaCopyCard,
 kpiTab,kpiStatsTab,kpiTopCountNorm,kpiTopCountItems,kpiAudit,kpiScalanie,kpiRozk,kpiNv,
